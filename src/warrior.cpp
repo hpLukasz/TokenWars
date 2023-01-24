@@ -1,14 +1,18 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include <future>
+#include <chrono>
 #include "imasteraccess.h"
 #include "warrior.h"
 #include "appdebug.h"
 #include "cmd.h"
 
 
-Warrior::Warrior(const std::string &wariorId, const WarriorConfig &config) : 
-    mId(wariorId), mWarriorConfig(config), mMemory{mWarriorConfig.getMemSize()}, mTokensNo(0)
+Warrior::Warrior(const WarriorConfig& config, CmdsQueue& cmdsQueue) :
+    WarriorAccessImpl(config.getId(), config.getMemSize(), config.getTokensNo()),
+    mCmds(cmdsQueue), 
+    mWarriorConfig(config)
 {
     //set tokens in memory
     int index;
@@ -28,7 +32,7 @@ Warrior::Warrior(const std::string &wariorId, const WarriorConfig &config) :
     {
         // verify to don't repeat the same vector's index
         do {
-            index = 1 + rand() % mWarriorConfig.getMemSize();
+            index = rand() % mWarriorConfig.getMemSize();
         } while(std::find(indexVec.begin(), indexVec.end(), index)!=indexVec.end());
         indexVec[counter-1] = index;
 
@@ -48,88 +52,43 @@ Warrior::Warrior(const std::string &wariorId, const WarriorConfig &config) :
     mTokensNo = mWarriorConfig.getTokensNo();
 }
 
-bool Warrior::isToken(uint32_t memIndex)
+Warrior::~Warrior()
 {
-    uint32_t dummy = 0;
-    if (mMemory.getMemory(memIndex, &dummy))
-        return dummy == 1;
-    else
-        return false;
+    std::cout << "Warrior " << mId << " destructor !" << std::endl;
 }
 
-void Warrior::clearToken(uint32_t memIndex)
-{
-    if (isToken(memIndex))
-    {
-        mMemory.setMemory(memIndex, 0);
-        if (--mTokensNo == 0)
-        {
-            std::cout << std::endl << mId << ": I am Dead !" << std::endl;
-            // notify master ..
-        }
-    }
-}
 
-bool Warrior::duel(std::shared_ptr<IMasterAccess> master, std::list<std::shared_ptr<IWarriorAccess>> warriors)
+// return true if finished scanning other warriors, false if own counter was set to 0
+bool Warrior::duel(Master & master, std::vector<WarriorConfig> configs)
 {
     uint32_t index;
 
-    for (auto enemy: warriors)
+    std::cout << "Warrior [" << mId << "] Thread ID: " << std::this_thread::get_id() <<std::endl;
+    std::flush(std::cout);
+
+    for (auto config: configs)
     {
         // skip myself
-        if (enemy->getId() == mId) continue;
+        if (config.getId() == mId) continue;
 
         index = 0;
-        while(enemy->isAlive())
-        {
-            do {
-                // check if myself is still alive
-                if (this->isAlive())
-                {
-                    //scan enemy memory
-                    master->addCmd(ICmd(eClearToken, index, mId, enemy->getId() ) );
-                }
-                else
-                {
-                    // died myself
-                    return false;
-                }
 
-            } while((++index < enemy->getMemSize()) && enemy->isAlive());
+        while(index < config.getMemSize()) {
+            //scan enemy memory
+            mCmds.addCmd(ICmd(eClearToken, index, mId, config.getId() ) );
+            index++;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
     }
 
     return true;
 }
 
-// bool Warrior::duel(Warrior &enemy)
-// {
-//     uint32_t index = 0;
-//     while(enemy.isAlive())
-//     {
-//         do {
-//             // check if myself is still alive
-//             if (this->isAlive())
-//             {
-//                 //scan enemy memory
-//                 if (enemy.isToken(index))
-//                 {
-//                     enemy.clearToken(index);
-//                     if (!enemy.isAlive())
-//                     {
-//                         std::cout << std::endl << mId << ": Killed enemy ! (" << enemy.getId() << ")"  << std::endl;
-//                         break;
-//                     }
-//                 }
-//             }
-//             else
-//             {
-//                 // died myself
-//                 return false;
-//             }
+bool Warrior::dummyTask(std::vector<std::shared_ptr<WarriorAccessImpl>> warriors)
+{
+    std::cout << "Thread id: " << std::this_thread::get_id() << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
-//         } while(++index < enemy.getMemSize());
-//     }
-
-//     return true;
-// }
+    return true;
+}

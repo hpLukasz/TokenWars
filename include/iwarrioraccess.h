@@ -2,12 +2,10 @@
 #define _IWARRIORACCESS_H_
 
 #include <cstdint>
-#include <cstring>
+#include <string>
 
 class IWarriorAccess
 {
-    protected:
-        std::string mId;
     public:
         //IWarriorAccess(std::string &wariorId) : mId(wariorId) {}
         virtual std::string & getId() = 0;

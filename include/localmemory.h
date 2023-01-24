@@ -14,7 +14,7 @@ class LocalMemory : public IBaseLocalMemory
         virtual uint32_t getSize();
         virtual bool setMemory(uint32_t value);
         virtual bool setMemory(uint32_t index, uint32_t value);
-        virtual bool getMemory(uint32_t index, uint32_t * const value);
+        virtual bool getMemory(uint32_t index, uint32_t & value);
 
         friend std::ostream & operator<<(std::ostream &o, const LocalMemory &memory);
 };

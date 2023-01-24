@@ -13,7 +13,7 @@ class IBaseLocalMemory
         virtual uint32_t getSize() = 0;
         virtual bool setMemory(uint32_t value) = 0;
         virtual bool setMemory(uint32_t index, uint32_t value) = 0;
-        virtual bool getMemory(uint32_t index, uint32_t * const value) = 0;
+        virtual bool getMemory(uint32_t index, uint32_t & value) = 0;
 
 };
 

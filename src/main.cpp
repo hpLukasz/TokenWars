@@ -4,36 +4,54 @@
 #include "localmemory.h"
 #include "warrior.h"
 #include "master.h"
+#include "cmdsqueue.h"
 
 using namespace std;
 
 int main() 
 {
-    // Warrior warrior1("W_1", WarriorConfig(1000,10));
-    // Warrior warrior2("W_2", WarriorConfig(1000,10));
-    // cout << "Warrior1:" << endl << warrior1.getMemory() << endl;
-    // cout << "Warrior2:" << endl << warrior2.getMemory() << endl;
+    CmdsQueue cmdQueue;
+    Master master(cmdQueue);
+    std::vector<WarriorConfig> configs;
+    std::vector<std::shared_ptr<WarriorAccessImpl>> warriors;
 
-    // warrior1.duel(warrior2);
-    // warrior2.duel(warrior1);
+    configs.push_back(WarriorConfig(1000,30,"W_1"));
+    configs.push_back(WarriorConfig(1000,30,"W_2"));
+    configs.push_back(WarriorConfig(1000,30,"W_3"));
+    configs.push_back(WarriorConfig(1000,30,"W_4"));
 
-    std::list<std::shared_ptr<Warrior>> warriorList;
+    shared_ptr<Warrior> warrior1 = make_shared<Warrior>(configs[0], cmdQueue);
+    shared_ptr<Warrior> warrior2 = make_shared<Warrior>(configs[1], cmdQueue);
+    shared_ptr<Warrior> warrior3 = make_shared<Warrior>(configs[2], cmdQueue);
+    shared_ptr<Warrior> warrior4 = make_shared<Warrior>(configs[3], cmdQueue);
+    warriors.push_back(warrior1);
+    warriors.push_back(warrior2);
+    warriors.push_back(warrior3);
+    warriors.push_back(warrior4);
 
-    for (int i=0;i<2;i++)
-    {
-        warriorList.push_back(
-           make_shared<Warrior>("W_" + to_string(i), WarriorConfig(1000,10))
-        );
-    }
 
-    // for (auto w: warriorList)
-    //     cout << w->getId() << endl << w->getMemory() << endl;
+    std::cout << "Main Thread ID: " << std::this_thread::get_id() <<std::endl;
 
-    Master master;
-    master.startProcessing(warriorList);
+    auto masterResult = async(&Master::proccessing, &master, warriors);
 
-    cout << "======= END =======" << endl;
-    master.stopProcessing();
+    auto warriorRes_1 = async(&Warrior::duel, warrior1, ref(master), configs);
+    auto warriorRes_2 = async(&Warrior::duel, warrior2, ref(master), configs);
+    auto warriorRes_3 = async(&Warrior::duel, warrior3, ref(master), configs);
+    auto warriorRes_4 = async(&Warrior::duel, warrior4, ref(master), configs);
+
+    // Wait first for fill the cmd's queue
+    auto r1 = warriorRes_1.get();
+    auto r2 = warriorRes_2.get();
+    auto r3 = warriorRes_3.get();
+    auto r4 = warriorRes_4.get();
+
+    master.setActive();
+
+    auto r5 = masterResult.get();
+    
+    // std::this_thread::sleep_for(chrono::seconds(2));
+
+    cout << "======= END GAME =======" << endl;
 
     return 0;
 }

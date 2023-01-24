@@ -2,25 +2,28 @@
 #define _MASTER_H_
 
 #include "imasteraccess.h"
-#include "warrior.h"
-#include <list>
+#include "warrioraccessimpl.h"
+#include "cmdsqueue.h"
+#include <vector>
 #include <mutex>
+#include <thread>
+#include <memory>
 
-class Master : public IMasterAccess
+class Master
 {
     private:
-
-    protected:
+        CmdsQueue & mCmds;
         bool mContinuesProcessing;
-        std::mutex mQueueMutex;
-        std::unique_lock<std::mutex> mLock;
+        bool mActive;
 
     public:
-        Master();
-        virtual bool addCmd(const ICmd &cmd);
-        void proccessing(std::list<std::shared_ptr<Warrior>> warriors);
-        void startProcessing(std::list<std::shared_ptr<Warrior>> warriors);
-        void stopProcessing() { mContinuesProcessing = false; }
+        Master(CmdsQueue &cmdsQueue);
+        virtual ~Master();
+        bool isEndOfGame(std::vector<std::shared_ptr<WarriorAccessImpl>> warriors, std::string& winner);
+        bool proccessing(std::vector<std::shared_ptr<WarriorAccessImpl>> warriors);
+        void setActive() { mActive = true; }
+
+        bool dummyTask(std::vector<std::shared_ptr<WarriorAccessImpl>> warriors);
     
 };
 

@@ -33,11 +33,11 @@ bool LocalMemory::setMemory(uint32_t index, uint32_t value)
     }
 }
 
-bool LocalMemory::getMemory(uint32_t index, uint32_t * const value)
+bool LocalMemory::getMemory(uint32_t index, uint32_t & value)
 {
     if (index < mSize) 
     {
-        *value = mMemory[index];
+        value = mMemory[index];
         return true;
     }
     else 
