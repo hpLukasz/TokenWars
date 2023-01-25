@@ -5,11 +5,23 @@
 #include "warrior.h"
 #include "master.h"
 #include "cmdsqueue.h"
+#include "threadpool.h"
 
 using namespace std;
 
+mutex m;
+
+void dummyTask()
+{
+    lock_guard<mutex> lg(m);
+    std::cout << "Task start [ID: " << std::this_thread::get_id() << "]" <<std::endl;
+    std::this_thread::sleep_for(chrono::milliseconds(100));
+    std::cout << "Task stop [ID: " << std::this_thread::get_id() << "]" <<std::endl;
+}
+
 int main() 
 {
+    /*
     CmdsQueue cmdQueue;
     Master master(cmdQueue);
     std::vector<WarriorConfig> configs;
@@ -50,7 +62,17 @@ int main()
     auto r5 = masterResult.get();
     
     // std::this_thread::sleep_for(chrono::seconds(2));
+*/
+    ThreadPool thPool;
 
+    for (uint32_t i=0; i<10; i++)
+    {
+        thPool.submit(dummyTask);
+    }
+
+    std::this_thread::sleep_for(chrono::seconds(5));
+
+    thPool.stopTasks();
     cout << "======= END GAME =======" << endl;
 
     return 0;

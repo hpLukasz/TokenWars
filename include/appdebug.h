@@ -1,1 +1,1 @@
-// #define MY_DEBUG
+#define MY_DEBUG
